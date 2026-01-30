@@ -40,4 +40,33 @@ describe("Lock", function () {
         expect(createdProject.owner).to.equal(project.address);
     });
     });
-    });
+
+    it("should reject contributions after deadline", async function () {
+        await network.provider.send("evm_increaseTime", [3600 * 24 * 8]);
+        await network.provider.send("evm_mine");
+        await expect(
+        crowdfunding.connect(user).invest(projectId, { value: ether("1") })
+        ).to.be.reverted;
+   }); 
+  
+    it("should not allow owner to withdraw before goal is met", async function () {
+        await expect(
+        crowdfunding.connect(owner).withdrawFunds(projectId)
+       ).to.be.reverted;
+  });
+  
+
+     it("should restrict withdrawal to project owner", async function () {
+        await expect(
+        crowdfunding.connect(attacker).withdrawFunds(projectId)
+        ).to.be.reverted;
+});
+
+     it("should allow contributors to claim refund if goal not met", async function () {
+       await network.provider.send("evm_increaseTime", [3600 * 24 * 8]);
+       await network.provider.send("evm_mine");
+       await expect(
+       crowdfunding.connect(contributor).refund(projectId)
+       ).to.changeEtherBalance(contributor, ether("1"));
+});
+});
